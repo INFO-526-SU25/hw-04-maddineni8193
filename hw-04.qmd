@@ -1,40 +1,375 @@
 ---
 title: "HW 04"
-author: "INSERT YOUR NAME HERE"
+author: "Sravani Maddineni"
 format:
   html:
     embed-resources: true
+execute:
+  warning: false
+  message: false
+  error: false
 toc: true
 ---
 
 ```{r load-packages, message = FALSE}
 library(tidyverse)
-# add any other packages you use here
+library(scales)
+library(lubridate)
+
 ```
 
 
 ## 1 - A second chance
 
 ```{r}
-#| label: label-me-1
+library(tidyverse)
+library(openintro)
+library(patchwork)
+
+### A & B Plots with Shared Title
+
+data(county)
+
+plot_a <- ggplot(county %>% filter(!is.na(median_edu))) +
+  geom_point(aes(x = homeownership, y = poverty)) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)") +
+  theme_minimal()
+
+plot_b <- ggplot(county %>% filter(!is.na(median_edu))) +
+  geom_point(aes(x = homeownership, y = poverty)) +
+  geom_smooth(aes(x = homeownership, y = poverty), se = FALSE, color = "blue") +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)") +
+  theme_minimal()
+
+(plot_a + plot_b) + plot_annotation(title = "Homeownership vs. Poverty: Raw Scatter & Trend Line")
+
+### C & D Plots with Shared Title
+plot_c <- ggplot(county %>% filter(!is.na(median_edu))) +
+  geom_point(aes(x = homeownership, y = poverty)) + 
+  geom_smooth(aes(x = homeownership, y = poverty, color = metro), se = FALSE) +
+  scale_color_manual(values = c("yes" = "green", "no" = "green")) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status") +
+  theme_minimal()
+
+plot_d <- ggplot(county %>% filter(!is.na(median_edu))) +
+  geom_smooth(aes(x = homeownership, y = poverty, color = metro), se = FALSE) +
+  geom_point(aes(x = homeownership, y = poverty)) +
+  scale_color_manual(values = c("yes" = "blue", "no" = "blue")) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status") +
+  theme_minimal()
+
+(plot_c + plot_d) + plot_annotation(title = "Homeownership vs. Poverty by Metro: Two Trend Line Approaches")
+
+### E & F Plots with Shared Title
+plot_e <- ggplot(county) +
+  geom_point(aes(x = homeownership, y = poverty, color = metro), size = 2) +
+  geom_smooth(aes(x = homeownership, y = poverty, linetype = metro), se = FALSE) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status", linetype = "Metro Status") +
+  theme_minimal()
+
+plot_f <- ggplot(county) +
+  geom_point(aes(x = homeownership, y = poverty, color = metro)) +
+  geom_smooth(aes(x = homeownership, y = poverty, color = metro), se = FALSE) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status") +
+  theme_minimal()
+
+(plot_e + plot_f) + plot_annotation(title = "Homeownership vs. Poverty by Metro: Linetype vs. Color Emphasis")
+
+### G & H Plots with Shared Title
+plot_g <- ggplot(county) +
+  geom_point(aes(x = homeownership, y = poverty, color = metro)) +
+  geom_smooth(aes(x = homeownership, y = poverty), se = FALSE) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status") +
+  theme_minimal()
+
+plot_h <- ggplot(county) +
+  geom_point(aes(x = homeownership, y = poverty, color = metro)) +
+  labs(x = "Homeownership Rate (%)", y = "Poverty Rate (%)", color = "Metro Status") +
+  theme_minimal()
+
+(plot_g + plot_h) + plot_annotation(title = "Homeownership vs. Poverty by Metro: Scatter vs. Overall Trend")
 
 ```
+
+Description:
+For this assignment, I selected several Homeownership vs. Poverty plots from Homework 1, Question 3 to improve based on the feedback received. The primary area for improvement was the lack of visual pairing using {patchwork}. To address this, I applied {patchwork} to all relevant plots (A through H) to display them side by side for easier and more meaningful visual comparison. For each pair, I also applied consistent themes, improved axis labels, and clarified legends to ensure the visual message was clear. In some cases, such as plots E & F and G & H, I removed long individual plot titles and instead applied a shared title using {plot_annotation} to avoid layout issues and improve readability. These improvements make it significantly easier to directly compare different visual approaches, whether it is raw scatterplots, trend lines, metro status distinctions, or overall trend patterns. Together, these changes enhance interpretability and present the relationships between homeownership, poverty, and metro status more clearly, addressing the feedback provided and improving the overall quality of the visualizations.
+
+Interpretion:
+
+A & B Plots 
+The first plot shows the raw relationship between homeownership and poverty rates across U.S. counties. There is a visible downward trend, where higher homeownership is generally associated with lower poverty rates. The second plot reinforces this pattern by adding a fitted trend line, making the negative association between homeownership and poverty more explicit.
+
+C & D Plots 
+These plots explore how metro status affects the relationship between homeownership and poverty. In Plot C, green trend lines are used for both metro and non-metro areas, suggesting a consistent negative relationship, though the patterns may vary slightly. Plot D uses blue trend lines and separates metro groups more clearly, again showing that higher homeownership tends to correspond with lower poverty, with potential differences between metro and non-metro counties.
+
+E & F Plots 
+Plots E and F present two visual strategies for comparing metro status. Plot E combines color and linetype to differentiate metro and non-metro areas, showing similar negative trends but with distinct visual cues for each group. Plot F simplifies the display using color alone, yet still effectively illustrates that, across both groups, higher homeownership rates are generally associated with lower poverty rates.
+
+G & H Plots 
+The final pair of plots provides a direct comparison of scatterplots with and without an overall trend line. Plot G includes both colored points by metro status and a general trend line, clearly emphasizing the negative relationship between homeownership and poverty. Plot H shows only the scatterplot colored by metro status, allowing for visual inspection of group-level patterns without imposing a trend estimate.
+
+
+
 
 
 ## 2.  Arizona state of counties
 
 ```{r}
 #| label: label-me-2
+library(tigris)
+library(sf)
+
+options(tigris_use_cache = TRUE)
+
+# Download Arizona counties shapefile (cached)
+az_counties <- counties(state = "AZ", year = 2021, cb = TRUE, progress_bar = FALSE)
+
+# Remove "County" from names
+az_counties$NAME <- gsub(" County", "", az_counties$NAME)
+
+library(ggplot2)
+library(ggrepel)
+
+ggplot(az_counties) +
+  geom_sf(fill = "grey90", color = "black") +
+  geom_label_repel(data = az_counties, aes(label = NAME, geometry = geometry),
+                   stat = "sf_coordinates", size = 3) +
+  coord_sf() +
+  labs(title = "Counties in Arizona State",
+       x = "Longitude",
+       y = "Latitude",
+       caption = "Source: Shapefile obtained using {tigris} R package, v2.0.1") +
+  theme_minimal()
 
 ```
+Interpretion:
+
+This plot shows the county boundaries of Arizona based on 2021 shapefile data obtained using the {tigris} R package. The map displays each county with a light grey fill and black borders for better visibility. The word "County" has been removed from the labels to keep them short and clear. County names are placed near the center of each county using geom_label_repel() to avoid label overlap. Latitude and longitude grid lines and labels are included to provide geographic context. A caption is added to credit the data source.
+
+
+
 
 ## 3.  Arizona state of population change
 
 ```{r}
 #| label: label-me-3
+library(tidyverse)
+library(readxl)
+library(tigris)
+library(sf)
+library(RColorBrewer)
+library(stringr)
+
+options(tigris_use_cache = TRUE)
+
+# Load counties
+arizona_counties <- counties(state = "AZ", cb = TRUE, class = "sf")
+
+# Load population data
+pop_data <- read_excel("C:/Users/Reliance/Documents/homework 1 viz/hw-04-maddineni8193/data/co-est2023-pop-04.xlsx", skip = 4, n_max = 15)
+
+# 3. Rename columns manually
+colnames(pop_data) <- c("NAME", "April_1_2020", "2020", "2021", "2022", "2023")
+# 4. Clean county names
+pop_data <- pop_data %>%
+mutate(
+NAME = str_remove(NAME, " County, Arizona"),
+NAME = str_remove(NAME, "^\\.") # Remove any leading dots
+)
+# 5. Merge shapefile and population data
+az_counties_pop <- left_join(arizona_counties, pop_data, by = "NAME")
+# 6. Create total_pop_change_20_23 variable (from 2020 to 2023)
+az_counties_pop <- az_counties_pop %>%
+mutate(total_pop_change_20_23 = `2023` - `2020`)
+
+ggplot(data = az_counties_pop) +
+  geom_sf(aes(fill = total_pop_change_20_23), color = "white", size = 0.3) +
+  scale_fill_gradientn(
+    colours = RColorBrewer::brewer.pal(11, "RdBu")[c(10, 6, 3)],
+    limits = c(0, 100000),
+    name = "Population change",
+    oob = scales::squish
+  ) +
+  labs(
+    title = "Resident Population Change for Counties in AZ",
+    subtitle = "July 01, 2020 to July 01, 2023",
+    x = "Longitude", y = "Latitude",
+    caption = "Source: Shapefile obtained using {tigris} R package, v2.0.1 population change data from the US Census Bureau"
+  ) +
+  theme_minimal()
 
 ```
+Interpretation:
+
+The map illustrates how the population changed across Arizona counties from 2020 to 2023. Each county is colored based on how much its population grew or declined during this period. Counties with darker blue shades saw larger population increases, while lighter or red areas had smaller increases or possible declines. The map highlights that population growth is uneven across the state. Some counties experienced noticeable growth, while others had relatively little change. This county-level view provides insight into broader regional population trends in Arizona.
+
+
+
 
 ## 4.  Arizona state of Indiginous Tribal Regions
+```{r}
+# Load libraries
+library(tidyverse)
+library(tigris)
+library(sf)
+library(ggrepel)
+library(stringr)
+
+options(tigris_use_cache = TRUE)
+
+# Load Arizona counties shapefile
+az_counties <- counties(state = "AZ", year = 2021, cb = TRUE, progress_bar = FALSE)
+
+# Load Tribal reservations shapefile
+tribal_regions <- st_read("C:/Users/Reliance/Documents/homework 1 viz/hw-04-maddineni8193/data/American_Indian_Reservations_in_Arizona.shp")
+
+# Standardize Coordinate Reference System (CRS)
+az_counties <- st_transform(az_counties, crs = 4269)
+tribal_regions <- st_transform(tribal_regions, crs = 4269)
+
+# Filter for the big 5 tribes to label
+tribes_to_label <- tribal_regions %>%
+  filter(NAME %in% c(
+    "Hopi Tribe",
+    "Navajo Nation",
+    "White Mountain Apache Tribe",
+    "San Carlos Apache Tribe",
+    "Tohono O’odham Nation"
+  ))
+
+# Plot the map
+ggplot() +
+  geom_sf(data = az_counties, fill = "grey90", color = "white") +  # Counties in light grey
+  geom_sf(data = tribal_regions, fill = NA, color = "black", linewidth = 1) +  # Tribal boundaries
+  geom_label_repel(
+    data = st_point_on_surface(tribes_to_label),
+    aes(label = NAME, geometry = geometry),
+    stat = "sf_coordinates",
+    min.segment.length = 0,
+    size = 3
+  ) +
+  labs(
+    title = "Indigenous Tribal Boundaries in AZ",
+    x = "Longitude",
+    y = "Latitude",
+    caption = "Source: Shapefile obtained using {tigris} R package, v2.0.1 Indigenous Tribe Shapefile obtained from AZGeo Data"
+  ) +
+  theme_minimal()
+
+```
+Interpretation
+This map shows the boundaries of Indigenous tribal regions within the state of Arizona. The light grey areas represent Arizona's counties, while the bold black outlines indicate the locations of tribal reservations across the state. Five major tribes are specifically labeled on the map: the Hopi Tribe, Navajo Nation, White Mountain Apache Tribe, San Carlos Apache Tribe, and Tohono O’odham Nation. The labels make it easy to identify the locations of these significant Indigenous communities. This visualization helps the viewer understand both the geographic distribution and the extent of Indigenous lands in Arizona, highlighting the presence of tribal regions alongside county boundaries.
+
+
 
 ## 5. Arizona state of patchwork
+```{r}
+
+# Load libraries
+library(tidyverse)
+library(sf)
+library(patchwork)
+library(tigris)
+library(readxl)
+library(ggrepel)
+library(stringr)
+
+options(tigris_use_cache = TRUE)
+
+# Load Arizona counties shapefile
+az_counties <- counties(state = "AZ", cb = TRUE, class = "sf")
+
+# Load Tribal areas shapefile 
+tribal_areas <- st_read("C:/Users/Reliance/Documents/homework 1 viz/hw-04-maddineni8193/data/American_Indian_Reservations_in_Arizona.shp")
+
+# Load population data
+pop_data <- read_excel("C:/Users/Reliance/Documents/homework 1 viz/hw-04-maddineni8193/data/co-est2023-pop-04.xlsx", skip = 4, n_max = 15)
+
+# Clean and prepare population data
+colnames(pop_data) <- c("NAME", "April_1_2020", "2020", "2021", "2022", "2023")
+
+pop_data <- pop_data %>%
+  mutate(NAME = str_remove(NAME, " County, Arizona"),
+         NAME = str_remove(NAME, "^\\."))
+
+# Merge counties and population data
+az_counties_pop <- left_join(az_counties, pop_data, by = "NAME") %>%
+  mutate(total_pop_change_20_23 = `2023` - `2020`)
+
+# Detect correct tribal name column
+tribal_label_col <- if ("NAME" %in% names(tribal_areas)) {
+  "NAME"
+} else if ("NAMELSAD" %in% names(tribal_areas)) {
+  "NAMELSAD"
+} else if ("TRIBE" %in% names(tribal_areas)) {
+  "TRIBE"
+} else {
+  stop("No suitable name column found in tribal areas shapefile.")
+}
+
+# Main Arizona Map
+main_map <- ggplot() +
+  geom_sf(data = az_counties_pop, aes(fill = total_pop_change_20_23), color = "white", size = 0.2) +
+  scale_fill_distiller(palette = "RdBu", direction = -1, name = "Population change") +
+  geom_label_repel(
+    data = az_counties_pop %>% filter(NAME %in% c("Maricopa", "Pinal", "Pima")),
+    aes(label = NAME, geometry = geometry),
+    stat = "sf_coordinates",
+    size = 3, fill = "white", color = "black", min.segment.length = 0
+  ) +
+  labs(
+    title = "Resident Population Change for Counties in Arizona",
+    subtitle = "July 01, 2020 to July 01, 2023",
+    x = "Longitude", y = "Latitude",
+    caption = "Source: Shapefile obtained using {tigris} R package, v2.0.1 population change data from the US Census Bureau Indigenous Tribe Shapefile obtained from AZGeo Data"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 8, hjust = 0.5),
+    legend.position = c(0.3, 0.93),
+    legend.direction = "horizontal",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8),
+    legend.title.position = "top"
+  ) +
+  coord_sf()
+
+# Add Dashed Connector Lines
+main_map_with_lines <- main_map +
+  geom_segment(aes(x = -112.2, y = 32.5, xend = -118, yend = 30.5), linetype = "dotted", size = 0.5, color = "black") +
+  geom_segment(aes(x = -112.2, y = 34.2, xend = -118, yend = 32), linetype = "dotted", size = 0.5, color = "black")
+
+# Filter the three tribes for the inset
+tribes_areas_filtered <- tribal_areas %>%
+  filter(.data[[tribal_label_col]] %in% c("White Mountain Apache Tribe", "San Carlos Apache Tribe", "Tohono O’odham Nation"))
+
+# Create inset map
+inset_map <- ggplot() +
+  geom_sf(data = tribes_areas_filtered, aes(fill = .data[[tribal_label_col]]), color = "black", size = 0.2) +
+  geom_label_repel(
+    data = tribes_areas_filtered,
+    aes_string(label = tribal_label_col, geometry = "geometry"),
+    stat = "sf_coordinates",
+    size = 2.3, fill = "white", color = "black", min.segment.length = 0
+  ) +
+  theme_void() +
+  theme(
+    plot.background = element_rect(fill = "gray60", color = NA),
+    legend.position = "none"
+  ) +
+  coord_sf(xlim = c(-122, -116), ylim = c(30, 34))
+
+# Combine base map and inset using patchwork
+final_plot <- main_map_with_lines + inset_element(inset_map, left = 0.05, bottom = 0.05, right = 0.48, top = 0.48)
+
+# Print final plot
+print(final_plot)
+
+
+```
+Interpretion:
+This map shows county-level population change in Arizona from 2020 to 2023, with an inset highlighting three major Indigenous tribal regions. The main map uses color shading to represent population growth, while the inset shows the locations of the White Mountain Apache Tribe, San Carlos Apache Tribe, and Tohono O’odham Nation. The combined map provides a clear view of both population trends and key tribal areas in Arizona.
+
+
